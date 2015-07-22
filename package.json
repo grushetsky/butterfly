@@ -4,18 +4,20 @@
   "description": "Gently fluttering over public terminals Web",
   "license": "\"IT Sphere\" Proprietary License",
   "devDependencies": {
-    "babel": "^5.5.6",
-    "babel-plugin-typecheck": "0.0.3",
-    "chai": "^3.0.0",
+    "babel": "^5.6.23",
+    "babel-plugin-typecheck": "^1.1.0",
+    "chai": "^3.1.0",
     "del": "^1.2.0",
     "gulp": "^3.9.0",
     "gulp-babel": "^5.1.0",
-    "gulp-mocha": "^2.1.1",
+    "gulp-mocha": "^2.1.3",
     "gulp-sourcemaps": "^1.5.2",
-    "source-map-support": "^0.3.1"
+    "source-map-support": "^0.3.2"
   },
   "dependencies": {
-    "electron-prebuilt": "^0.28.1",
-    "socket.io": "^1.3.5"
+    "electron-prebuilt": "^0.28.3",
+    "machina": "^1.1.2",
+    "socket.io": "^1.3.6",
+    "underscore": "^1.8.3"
   }
 }

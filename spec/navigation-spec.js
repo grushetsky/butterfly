@@ -31,18 +31,4 @@ describe('Navigation', () => {
 
   })
 
-  // describe('remote Web navigator', () => {
-
-  //   it('should transition to supplied URL', (done) => {
-  //     var navigator = NavigatorFactory.CreateRemoteWebNavigator()
-  //     var targetUrl = 'http://example.com/'
-  //     navigator.goTo(targetUrl, (err, result) => {
-  //       expect(result.constructor).to.equal(SuccessResult)
-  //       expect(navigator.getCurrentUrl()).to.equal(targetUrl)
-  //       done()
-  //     })
-  //   })
-
-  // })
-
 })

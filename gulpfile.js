@@ -9,11 +9,13 @@ var options = {}
 
 var paths = {
   build: 'build',
-  es6: ['core/**/*.js', 'spec/**/*-spec.js']
+  watch: ['core/**/*.js', 'spec/**/*-spec.js', 'mock/**/*.json'],
+  babel: ['core/**/*.js', 'dev/**/*.js'],
+  spec: 'spec/**/*-spec.js'
 }
 
-gulp.task('babel', function () {
-  return gulp.src(paths.es6)
+gulp.task('build', function () {
+  return gulp.src(paths.babel)
     .pipe(sourcemaps.init())
     .pipe(babel())
     .pipe(sourcemaps.write('.'))
@@ -21,7 +23,7 @@ gulp.task('babel', function () {
 })
 
 gulp.task('watch', function () {
-  gulp.watch(paths.es6, ['test'])
+  gulp.watch(paths.watch, ['test'])
 })
 
 gulp.task('clean', function () {
@@ -29,10 +31,10 @@ gulp.task('clean', function () {
 })
 
 gulp.task('test', function () {
-  return gulp.src('spec/**/*-spec.js')
+  return gulp.src(paths.spec)
     .pipe(mocha({
       compilers: {
-        js: require('babel/register'),
+        js: require('babel/register')
       },
       reporter: 'spec'
     }))

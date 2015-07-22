@@ -1,0 +1,44 @@
+{
+  "homescreen": [
+    {
+      "name": "Погода Спутник.ру",
+      "url": "http://pogoda.sputnik.ru/"
+    },
+    {
+      "name": "ПГУ РФ",
+      "url": "http://www.gosuslugi.ru/"
+    },
+    {
+      "name": "Банки.ру",
+      "url": "http://www.banki.ru/"
+    },
+    {
+      "name": "Сбербанк Онлайн",
+      "url": "https://online.sberbank.ru/"
+    },
+    {
+      "name": "Карты Спутник.ру",
+      "url": "http://maps.sputnik.ru/"
+    },
+    {
+      "name": "Спутник",
+      "url": "http://www.sputnik.ru/"
+    },
+    {
+      "name": "Zvooq",
+      "url": "http://zvooq.ru/"
+    },
+    {
+      "name": "Avito",
+      "url": "https://www.avito.ru/"
+    },
+    {
+      "name": "Портал МФЦ Хабаровского края",
+      "url": "http://mfc27.ru/"
+    },
+    {
+      "name": "ПГУ города Москвы",
+      "url": "https://pgu.mos.ru/"
+    }
+  ]
+}

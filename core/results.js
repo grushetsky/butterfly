@@ -1,3 +1,5 @@
+import { ButterflyError } from './common'
+
 export class FunctionResult {
 
 }
@@ -7,10 +9,6 @@ export class SuccessResult extends FunctionResult {
 }
 
 export class FailResult extends FunctionResult {
-
-}
-
-export class ButterflyError extends Error {
 
 }
 
