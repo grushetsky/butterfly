@@ -1,8 +1,12 @@
 import { ButterflyTimeoutError } from './common'
+import Settings from './settings'
 // import { FunctionResult, SuccessResult, FailResult, FlytimeStartFailError } from './results'
 // import { NavigatorFactory } from './navigation.js'
 
 import machina from 'machina'
+import fs from 'fs'
+import electron from 'electron-prebuilt'
+import childProcess from 'child_process'
 
 /**
  * Flytime acts as an abstract class and the creator of the concrete runtimes
@@ -13,56 +17,7 @@ export default class Flytime {
     return machina.Fsm.extend({
       initialize: () => {},
       namespace: 'flytime',
-      initialState: 'uninitialized',
-      states: {
-        'uninitialized': {
-          init: function () {
-            this.transition('initializing')
-          }
-        },
-        'initializing': {
-          _onEnter: function () {
-
-            // Read settings
-            // Check if frontend is available
-            // Make transition in a callback if everything is successful
-            this.transition('ready-to-start')
-          }
-        },
-        'initialization-failed': {
-
-        },
-        'ready-to-start': {
-          start: function () {
-
-            this.transition('starting')
-          }
-        },
-        'starting': {
-          _onEnter: function () {
-
-            // Start up local server that hosts homescreen
-            // Start up frontend
-            // defer 'navigate-to-homescreen' comand until transition to processing state
-            this.transition('processing')
-          }
-        },
-        'processing': {
-          navigate: function (url) {
-
-            // Send 'transition' to 'url' command via Socket.IO
-          },
-          needToNavigate: function (url) {
-
-          }
-        },
-        'stopping': {
-
-        },
-        'stopped': {
-
-        }
-      }
+      initialState: 'uninitialized'
     })
   }
 
@@ -75,51 +30,27 @@ export default class Flytime {
     })
   }
 
-  init() {}
-  start() {}
-
-  static CreateMockFlytime() {
-    return new MockFlytime()
-  }
-
-}
-
-export class MockFlytime extends Flytime {
-  get initTimeout() { return 1000 }
-
-  constructor() {
-    super()
-    this.fsm = new Flytime.FsmPrototype()
-  }
-
-  _promiseAction(action, targetStateName) {
-    return new Promise((resolve, reject) => {
-      this._onStateReached(targetStateName, () => {
-        resolve()
-      })
-      this.fsm.handle(action)
-
-      setTimeout(() => {
-        reject(new ButterflyTimeoutError(action, this.initTimeout))
-      }, this.initTimeout)
+  _onError(errorCaught) {
+    var errorSub = this.fsm.on('error', (error) => {
+      errorSub.off()
+      errorCaught(error)
     })
   }
 
-  init() {
-    return this._promiseAction('init', 'ready-to-start')
+  init() {}
+  start() {}
+
+  static CreateDefaultFlytime() {
+    return new DefaultFlytime()
   }
 
-  start() {
-    return this._promiseAction('start', 'processing')
-  }
 }
 
 export class DefaultFlytime extends Flytime {
 
-
-
   constructor() {
     super()
+    var self = this
     this.fsm = new Flytime.FsmPrototype({
       states: {
         'uninitialized': {
@@ -129,31 +60,62 @@ export class DefaultFlytime extends Flytime {
         },
         'initializing': {
           _onEnter: function () {
-            // Read settings
-            // Prepare other subsystems
-            // Check if frontend is available
-            // Make transition in a callback if everything is successful
-            this.transition('ready-to-start')
-          }
-        },
-        'initialization-failed': {
 
+            // 1. Read settings
+            // 2. Check if frontend is available
+            // 3. Initialize messaging server
+            // 4. Prepare other subsystems
+            // 5. Transition to 'ready-to-start'
+
+            Settings.LoadFromFile('./mock/test-real-settings.json').then((settings) => {
+              self.settings = settings
+              return Promise.resolve()
+            }).then(() => {
+              switch (self.settings.frontend.type) {
+                case 'electrofly':
+                case 'some-other-frontend':
+                  if (fs.lstatSync(self.settings.frontend.path).isDirectory()) {
+                    return Promise.resolve()
+                  }
+                  break
+              }
+              return Promise.reject(new UnknownFrontendError())
+            }).then(() => {
+              this.transition('ready-to-start')
+            }).catch(error => {
+              this.emit('error', error)
+              this.transition('uninitialized')
+            })
+          }
         },
         'ready-to-start': {
           start: function () {
-
-            // Prepare to start up transition
             this.transition('starting')
           }
         },
         'starting': {
           _onEnter: function () {
 
-            // Start up
-            this.transition('processing')
+            new Promise((resolve, reject) => {
+
+              // 1. Start process
+              // 2. Wait for client connection to messaging server
+              // 3. Navigate to home screen
+              // 4. Transition to 'running'
+
+              var electrofly = childProcess.spawn(electron, [self.settings.frontend.path], {
+                stdio: 'inherit'
+              })
+
+            }).then(() => {
+              this.transition('running')
+            }).catch(error => {
+              this.emit('error', error)
+              this.transition('ready-to-start')
+            })
           }
         },
-        'processing': {
+        'running': {
 
         },
         'stopping': {
@@ -166,74 +128,25 @@ export class DefaultFlytime extends Flytime {
     })
   }
 
-  init() {
-
+  init(timeout: number = 2000) {
+    return new Promise((resolve, reject) => {
+      this.fsm.handle('init')
+      this._onStateReached('ready-to-start', resolve)
+      this._onError(reject)
+      setTimeout(() => {
+        reject(new ButterflyTimeoutError('init', timeout))
+      }, timeout)
+    })
   }
 
-  start() {
-
+  start(timeout: number = 2000) {
+    return new Promise((resolve, reject) => {
+      this.fsm.handle('start')
+      this._onStateReached('running', resolve)
+      this._onError(reject)
+      setTimeout(() => {
+        reject(new ButterflyTimeoutError('start', timeout))
+      }, timeout)
+    })
   }
 }
-
-
-// class MockFlytime extends Flytime {
-
-//   constructor() {
-//     super()
-//     this._expectedResult = new FailResult()
-//   }
-
-//   get expectedResult() {
-//     return this._expectedResult
-//   }
-
-//   set expectedResult(result) {
-//     return this._expectedResult = result
-//   }
-
-//   start(done: Function) {
-//     if (this.expectedResult.constructor === SuccessResult) {
-//       done(null, new SuccessResult())
-//     } else if (this.expectedResult.constructor === FailResult) {
-//       done(new FlytimeStartFailError(), null)
-//     }
-//   }
-
-//   stop(done: Function) {
-//     done(null, new FunctionResult())
-//   }
-
-// }
-
-// class RemoveMeFlytime extends Flytime {
-
-//   constructor(url) {
-//     super()
-//     this._navigator = NavigatorFactory.CreateRemoteWebNavigator()
-//     this._url = url
-//   }
-
-//   start(done: Function) {
-//     var electron = require('electron-prebuilt');
-//     var childProcess = require('child_process');
-//     var electrofly = childProcess.spawn(electron, ['/home/toxic/Projects/electrofly/app'], {
-//       stdio: 'inherit'
-//     });
-
-//     electrofly.on('close', function () {
-//       // Kill the host process when user closes the app
-//       process.exit();
-//     });
-
-//     setTimeout(() => {
-//       this._navigator.goTo(this._url, (err, result) => { })
-//     }, 2000)
-
-//     done(null, null)
-//   }
-
-//   stop(done: Function) {
-//     done(null, new FunctionResult())
-//   }
-
-// }

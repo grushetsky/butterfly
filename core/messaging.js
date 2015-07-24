@@ -1,97 +1,73 @@
+import { ButterflyError } from './common'
+
 import socketIo from 'socket.io'
-import { SuccessResult } from './results'
 
-class AbstractMessenger {
-
-  send(command: string, data, done: Function) {}
-
-  on(command: string, done: Function) {}
-
-}
-
-class RemoteMessenger extends AbstractMessenger {
-
-  constructor(messagingStrategy) {
-    super()
-    this._messagingStrategy = messagingStrategy
-  }
-
-  send(command: string, data, done: Function) {
-    this._messagingStrategy.sendCommand(command, data, (err, result) => {
-      if (err) {
-        done(err, result)
-      }
-      done(err, new SuccessResult())
-    })
-  }
-
-  on(command: string, done: Function) {
-    this._messagingStrategy.onCommandReceived(command, (data) => {
-      done(data)
-    })
-  }
-
-}
-
-class AbstractMessagingStrategy {
-
-  sendCommand(command: string, data, done: Function) {}
-
-  onCommandReceived(command: string, done: Function) {}
-
-}
-
-class SocketIoMessagingStrategy extends AbstractMessagingStrategy {
-
-  constructor(options) {
-    super()
-    initServer(this)
-    this._namespaces = {}
-    this._subscribers = []
-
-    function initServer(self) {
-      self._io = socketIo()
-      self._io.on('connection', (socket) => {
-         console.log("Socket connected: " + socket.id)
-      })
-      self._io.listen(options.port)
+export default class Messenger {
+  static CreateRemoteMessenger(options: Object) {
+    if (options.mechanism.toLowerCase() === 'socket.io') {
+      return new SocketIoMessenger(options.port)
+    } else {
+      throw new MessengerError(`Can't create remote messenger! Unknown messaging mechanism '${options.mechanism}'.`)
     }
   }
 
-  _onMessageReceived(socket) {
-    socket.on('navigation.transition-finished', (data) => {
-      console.log("Received message!!! Transition done!")
-      this._subscribers.forEach((subscriber) => {
-        subscriber(data)
+  start() {}
+  stop() {}
+  on(commandName: string, done: Function) {}
+  send(commandName: string, data: Object) {}
+}
+
+class SocketIoMessenger extends Messenger {
+  constructor(port) {
+    super()
+    this._port = port
+    this._clientSockets = []
+    this._io = socketIo()
+
+    // Maintain list of connected clients and notify each client upon
+    // connection with 'connection-ok' message
+    this._io.on('connection', (socket) => {
+      // console.log(`Socket '${socket.id}' connected!`)
+      this._clientSockets.push(socket)
+      socket.on('disconnect', () => {
+        // console.log(`Socket '${socket.id}' was closed.`)
+        this._clientSockets.splice(this._clientSockets.indexOf(socket), 1)
+      })
+      socket.on('error', (error) => {
+        // console.log(`Error occurred on socket '${socket.id}': `, error)
       })
     })
   }
 
-  sendCommand(command: string, data, done: Function) {
-    var namespaceName = command.split('.')[0]
-    this._namespaces[namespaceName] = this._io.of('/' + namespaceName)
-    this._namespaces[namespaceName].on('connection', this._onMessageReceived)
-
-    // TODO: Send to defined namespace instead of default namespace
-    this._io.sockets.emit(command.split('.')[1], data)
-    // this._namespaces[namespaceName].emit(command.split('.')[1], data)
-
-    done(null, new SuccessResult())
+  start() {
+    // console.log(`Server started listening on port ${this._port}.`)
+    this._io.listen(this._port)
   }
 
-  onCommandReceived(command: string, done: Function) {
-    this._subscribers.push(done)
+  stop() {
+
+    // Close all existing client connections and stop listening
+    this._io.close()
   }
 
+  on(commandName: string, done: Function) {
+    this._io.on('connection', (socket) => {
+      socket.on(commandName, (data) => {
+        done(data)
+      })
+    })
+  }
+
+  send(commandName: string, data: Object) {
+
+    // Sends message to all connected clients what's probably a bad idea...
+    this._io.emit(commandName, data)
+  }
 }
 
-export class MessengerFactory {
-
-  static CreateRemoteMessenger() {
-    if (!this._sharedStrategy) {
-      this._sharedStrategy = new SocketIoMessagingStrategy({ port: 5678 })
-    }
-    return new RemoteMessenger(this._sharedStrategy)
+export class MessengerError extends ButterflyError {
+  constructor(message) {
+    super(message)
   }
-
 }
+

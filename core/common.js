@@ -16,6 +16,12 @@ export class ButterflyTimeoutError extends ButterflyError {
   }
 }
 
+export class UnknownFrontendError extends ButterflyError {
+  constructor(frontendName) {
+    super(`Unknown frontend '${frontendName}' found in settings!`)
+  }
+}
+
 export class TestCaseUnexpectedResultError extends ButterflyError {
   constructor(message) {
     super(message)

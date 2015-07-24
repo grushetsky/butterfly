@@ -1,4 +1,12 @@
 {
+  "messenger": {
+    "port": 5678,
+    "mechanism": "Socket.IO"
+  },
+  "frontend": {
+    "type": "electrofly",
+    "path": "/home/toxic/Projects/electrofly/app/"
+  },
   "homescreen": [
     {
       "name": "Погода Спутник.ру",

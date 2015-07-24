@@ -9,7 +9,7 @@ var options = {}
 
 var paths = {
   build: 'build',
-  watch: ['core/**/*.js', 'spec/**/*-spec.js', 'mock/**/*.json'],
+  watch: ['core/**/*.js', 'spec/**/*-spec.js', 'mock/**/*.json', 'mock/**/*.js'],
   babel: ['core/**/*.js', 'dev/**/*.js'],
   spec: 'spec/**/*-spec.js'
 }
