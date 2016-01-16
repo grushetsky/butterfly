@@ -1,7 +1,6 @@
 import { ButterflyTimeoutError } from './common'
 import Settings from './settings'
-// import { FunctionResult, SuccessResult, FailResult, FlytimeStartFailError } from './results'
-// import { NavigatorFactory } from './navigation.js'
+import Messenger from './messaging'
 
 import machina from 'machina'
 import fs from 'fs'
@@ -81,6 +80,9 @@ export class DefaultFlytime extends Flytime {
               }
               return Promise.reject(new UnknownFrontendError())
             }).then(() => {
+              self.messenger = Messenger.CreateRemoteMessenger(self.settings.messenger)
+              return Promise.resolve()
+            }).then(() => {
               this.transition('ready-to-start')
             }).catch(error => {
               this.emit('error', error)
@@ -98,15 +100,24 @@ export class DefaultFlytime extends Flytime {
 
             new Promise((resolve, reject) => {
 
-              // 1. Start process
-              // 2. Wait for client connection to messaging server
-              // 3. Navigate to home screen
-              // 4. Transition to 'running'
+              // 1. Start messenger
+              // 2. Start frontend process
+              // 3. Wait for client connection to messaging server
+              // 4. Navigate to home screen
+              // 5. Transition to 'running'
 
-              var electrofly = childProcess.spawn(electron, [self.settings.frontend.path], {
-                stdio: 'inherit'
-              })
+              try {
+                var electrofly = childProcess.spawn(electron, [self.settings.frontend.path], {
+                  stdio: 'inherit'
+                })
 
+                self.messenger.start()
+              } catch (error) {
+                reject(error)
+              }
+              resolve()
+            }).then(() => {
+              return self.messenger.waitForClientConnection()
             }).then(() => {
               this.transition('running')
             }).catch(error => {
@@ -116,7 +127,26 @@ export class DefaultFlytime extends Flytime {
           }
         },
         'running': {
+          _onEnter: function () {
+            self.messenger.on('navigation.open-site-intent', (data) => {
 
+              console.log('SERV: got data open site:', data.url)
+              // TODO: Check if site is blacklisted
+              self.messenger.send('navigation.navigate-url', data.url)
+            })
+            self.messenger.on('navigation.navigate-home-intent', (data) => {
+
+              // TODO: Check if navigation to homescreen is allowed
+              self.messenger.send('navigation.navigate-home', self.settings.homescreen)
+            })
+
+            self.messenger.on('echo', (data) => {
+              console.log('Got echoed!', data)
+            })
+
+            self.messenger.send('navigation.navigate-home', self.settings.homescreen)
+            self.messenger.send('ping', { me: 'sheieieieieieit' })
+          }
         },
         'stopping': {
 

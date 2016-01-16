@@ -37,7 +37,7 @@ describe(`Settings`, () => {
       })
     })
 
-    it(`should load correctly using generators syntax`, (done) => {
+    it(`should load correctly using generators`, (done) => {
       spawn(function* () {
         try {
           var settings = yield Settings.LoadFromFile(configFilePath)
@@ -50,7 +50,7 @@ describe(`Settings`, () => {
     })
 
     it(`should throw an error if the file cannot be found`, (done) => {
-      Settings.LoadFromFile(unexistingConfigFilePath).then(() => {
+      Settings.LoadFromFile(unexistingConfigFilePath).then((settings) => {
         done(new TestCaseUnexpectedResultError(`File was read successfully!`))
       }).catch(error => {
         if (error instanceof FileNotFoundError) {
@@ -62,7 +62,7 @@ describe(`Settings`, () => {
     })
 
     it(`should throw an error if the file contents cannot be parsed`, (done) => {
-      Settings.LoadFromFile(brokenConfigFilePath).then(() => {
+      Settings.LoadFromFile(brokenConfigFilePath).then((settings) => {
         done(new TestCaseUnexpectedResultError(`File was parsed successfully!`))
       }).catch(error => {
         if (error instanceof JsonParsingError) {

@@ -18,6 +18,17 @@ describe(`Butterfly runtime`, () => {
       })
     })
 
+    it(`should start successfully`, (done) => {
+      let defaultFlytime = Flytime.CreateDefaultFlytime()
+      defaultFlytime.init().then(() => {
+        return defaultFlytime.start()
+      }).then(() => {
+        done()
+      }).catch((error) => {
+        done(error)
+      })
+    })
+
     // it('should throw an error if initialization takes too long', (done) => {
     //   let defaultFlytime = Flytime.CreateDefaultFlytime()
     //   defaultFlytime.init().then(() => {

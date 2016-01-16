@@ -15,23 +15,19 @@ export default class Messenger {
   stop() {}
   on(commandName: string, done: Function) {}
   send(commandName: string, data: Object) {}
+  waitForClientConnection() {}
 }
 
 class SocketIoMessenger extends Messenger {
   constructor(port) {
     super()
     this._port = port
-    this._clientSockets = []
     this._io = socketIo()
 
-    // Maintain list of connected clients and notify each client upon
-    // connection with 'connection-ok' message
     this._io.on('connection', (socket) => {
       // console.log(`Socket '${socket.id}' connected!`)
-      this._clientSockets.push(socket)
       socket.on('disconnect', () => {
         // console.log(`Socket '${socket.id}' was closed.`)
-        this._clientSockets.splice(this._clientSockets.indexOf(socket), 1)
       })
       socket.on('error', (error) => {
         // console.log(`Error occurred on socket '${socket.id}': `, error)
@@ -53,6 +49,7 @@ class SocketIoMessenger extends Messenger {
   on(commandName: string, done: Function) {
     this._io.on('connection', (socket) => {
       socket.on(commandName, (data) => {
+        console.log('messaging.on:', commandName, data)
         done(data)
       })
     })
@@ -62,6 +59,16 @@ class SocketIoMessenger extends Messenger {
 
     // Sends message to all connected clients what's probably a bad idea...
     this._io.emit(commandName, data)
+  }
+
+  waitForClientConnection() {
+    return new Promise((resolve, reject) => {
+      this._io.on('connection', (socket) => {
+        resolve()
+      })
+
+      // TODO: Probably a good idea to add a timeout here...
+    })
   }
 }
 

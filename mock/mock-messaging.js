@@ -35,4 +35,3 @@ class RemoteMessengerEchoClient extends MockRemoteMessengerClient {
     })
   }
 }
-
